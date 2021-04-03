@@ -60,6 +60,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
 	void StartGame();
 
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	bool FindRandomNavLocation(APawn* ForPawn, float InRadius, FVector& OutLocation) const;
+	FNavLocation FindRandomNavLocation(APawn* ForPawn, float InRadius) const;
+
 protected:
 	virtual void BeginPlay() override;
 

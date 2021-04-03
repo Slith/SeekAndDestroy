@@ -5,6 +5,8 @@
 #include "SeekAndDestroyCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
+#include "NavigationSystem.h"
+
 ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 {
 	// use our custom PlayerController class
@@ -34,6 +36,41 @@ void ASeekAndDestroyGameMode::RestartGame()
 void ASeekAndDestroyGameMode::StartGame()
 {
 	SwitchToGamePhase(EGamePhase::Play);
+}
+
+bool ASeekAndDestroyGameMode::FindRandomNavLocation(APawn* ForPawn, float InRadius, FVector& OutLocation) const
+{
+	const FNavLocation& FoundNavLocation = FindRandomNavLocation(ForPawn, InRadius);
+	OutLocation = FoundNavLocation.Location;
+	return FoundNavLocation.HasNodeRef();
+}
+
+FNavLocation ASeekAndDestroyGameMode::FindRandomNavLocation(APawn* ForPawn, float InRadius) const
+{
+	FNavLocation FoundNavLocation;
+
+	if (!ForPawn)
+	{
+		// @TODO log warning;
+		return FoundNavLocation;
+	}
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (!NavSys)
+	{
+		// @TODO log warning;
+		return FoundNavLocation;
+	}
+
+	const FNavAgentProperties& AgentProps = ForPawn->GetNavAgentPropertiesRef();
+	const ANavigationData* NavData = NavSys->GetNavDataForProps(AgentProps);
+	if (!NavData || !NavData->GetRandomReachablePointInRadius(ForPawn->GetNavAgentLocation(), InRadius, FoundNavLocation))
+	{
+		// @TODO log warning;
+		return FoundNavLocation;
+	}
+
+	return FoundNavLocation;
 }
 
 void ASeekAndDestroyGameMode::BeginPlay()
