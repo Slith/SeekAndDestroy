@@ -17,3 +17,47 @@ ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 }
+
+void ASeekAndDestroyGameMode::SwitchToGamePhase(EGamePhase InGamePhase)
+{
+	GamePhaseChangingCode.Broadcast(InGamePhase);
+	GamePhaseChanging.Broadcast(InGamePhase);
+	GamePhase = InGamePhase;
+	OnGamePhaseChanged();
+}
+
+void ASeekAndDestroyGameMode::RestartGame()
+{
+	SwitchToGamePhase(EGamePhase::Configuration);
+}
+
+void ASeekAndDestroyGameMode::StartGame()
+{
+	SwitchToGamePhase(EGamePhase::Play);
+}
+
+void ASeekAndDestroyGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	RestartGame();
+}
+
+void ASeekAndDestroyGameMode::OnGamePhaseChanged()
+{
+	switch (GetGamePhase())
+	{
+	case EGamePhase::Configuration:
+		break;
+	case EGamePhase::Play:
+		if (HostilePawnCount <= 0)
+		{
+			SwitchToGamePhase(EGamePhase::End);
+			return;
+		}
+		// @TODO spawning
+		break;
+	case EGamePhase::End:
+		break;
+	}
+}
