@@ -61,6 +61,9 @@ public:
 	void StartGame();
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	void FinishGame();
+
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
 	bool FindRandomNavLocation(APawn* ForPawn, float InRadius, FVector& OutLocation) const;
 	FNavLocation FindRandomNavLocation(APawn* ForPawn, float InRadius) const;
 

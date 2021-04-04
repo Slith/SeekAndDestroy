@@ -38,6 +38,11 @@ void ASeekAndDestroyGameMode::StartGame()
 	SwitchToGamePhase(EGamePhase::Play);
 }
 
+void ASeekAndDestroyGameMode::FinishGame()
+{
+	SwitchToGamePhase(EGamePhase::End);
+}
+
 bool ASeekAndDestroyGameMode::FindRandomNavLocation(APawn* ForPawn, float InRadius, FVector& OutLocation) const
 {
 	const FNavLocation& FoundNavLocation = FindRandomNavLocation(ForPawn, InRadius);
