@@ -26,6 +26,10 @@ protected:
 	UPROPERTY(Transient)
 	EGamePhase GamePhase;
 
+	/** The default pawn class used by players. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Classes)
+	TSubclassOf<APawn> DefaultHostilePawnClass;
+
 public:
 	UPROPERTY(BlueprintAssignable, Category = SeekAndDestroy)
 	FGamePhaseChangingDelegate GamePhaseChanging;

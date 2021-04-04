@@ -13,10 +13,16 @@ ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 	PlayerControllerClass = ASeekAndDestroyPlayerController::StaticClass();
 
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/TopDownCPP/Blueprints/TopDownCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/SeekAndDestroyContent/SAD_PlayerCharacter"));
 	if (PlayerPawnBPClass.Class != nullptr)
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<APawn> HostilePawnBPClass(TEXT("/Game/SeekAndDestroyContent/SAD_HostileCharacter"));
+	if (HostilePawnBPClass.Class != nullptr)
+	{
+		DefaultHostilePawnClass = HostilePawnBPClass.Class;
 	}
 }
 
