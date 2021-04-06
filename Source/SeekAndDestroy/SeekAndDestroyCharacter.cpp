@@ -12,6 +12,8 @@
 #include "Materials/Material.h"
 #include "Engine/World.h"
 
+#include "SADAIController.h"
+
 ASeekAndDestroyCharacter::ASeekAndDestroyCharacter()
 {
 	// Set size for player capsule
@@ -47,6 +49,9 @@ ASeekAndDestroyCharacter::ASeekAndDestroyCharacter()
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	AIControllerClass = ASADAIController::StaticClass();
 }
 
 void ASeekAndDestroyCharacter::Tick(float DeltaSeconds)
