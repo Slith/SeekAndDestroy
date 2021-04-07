@@ -5,6 +5,7 @@
 #include "SeekAndDestroyCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #include "NavigationSystem.h"
 
@@ -116,8 +117,6 @@ void ASeekAndDestroyGameMode::BeginPlay()
 
 void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 {
-	float RadiusForSpawn = 0.0f;
-	FNavLocation InitialNavLocation;
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	if (!NavSys)
 	{
@@ -125,6 +124,9 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 		SwitchToGamePhase(EGamePhase::End);
 		return;
 	}
+
+	float RadiusForSpawn = 0.0f;
+	FNavLocation InitialNavLocation;
 	NavSys->ProjectPointToNavigation(InitialNavLocation.Location, InitialNavLocation);
 
 	switch (NewGamePhase)
@@ -163,6 +165,14 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 			return;
 		}
 
+		for (auto&& PlayerPawn : PlayerPawns)
+		{
+			if (PlayerPawn->GetCharacterMovement())
+			{
+				PlayerPawn->GetCharacterMovement()->MaxWalkSpeed = PlayerPawnSpeed;
+			}
+		}
+
 		if (PlayerPawns.Num() > 0 && PlayerPawns[0] != nullptr)
 		{
 			// Hostile spawning
@@ -178,6 +188,7 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 				// Based on PlayerPawn which is already present.
 				InitialNavLocation = FindRandomNavLocationInRadius(PlayerPawns[0], RadiusForSpawn);
 				HostilePawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialNavLocation.Location)));
+				HostilePawns.Last()->GetCharacterMovement()->MaxWalkSpeed = HostilePawnSpeed;
 			}
 		}
 
