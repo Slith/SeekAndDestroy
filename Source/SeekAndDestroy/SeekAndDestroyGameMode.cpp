@@ -14,13 +14,13 @@ ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 	PlayerControllerClass = ASeekAndDestroyPlayerController::StaticClass();
 
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/SeekAndDestroyContent/SAD_PlayerCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/SeekAndDestroyContent/Characters/BP_SAD_PlayerCharacter"));
 	if (PlayerPawnBPClass.Class != nullptr)
 	{
 		DefaultPlayerPawnClass = PlayerPawnBPClass.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<APawn> HostilePawnBPClass(TEXT("/Game/SeekAndDestroyContent/SAD_HostileCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> HostilePawnBPClass(TEXT("/Game/SeekAndDestroyContent/Characters/BP_SAD_HostileCharacter"));
 	if (HostilePawnBPClass.Class != nullptr)
 	{
 		DefaultHostilePawnClass = HostilePawnBPClass.Class;
@@ -29,11 +29,12 @@ ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 	DefaultPawnClass = SpectatorClass;
 }
 
-void ASeekAndDestroyGameMode::SwitchToGamePhase(EGamePhase InGamePhase)
+void ASeekAndDestroyGameMode::SwitchToGamePhase(EGamePhase NewGamePhase)
 {
-	GamePhaseChangingCode.Broadcast(InGamePhase);
-	GamePhaseChanging.Broadcast(InGamePhase);
-	GamePhase = InGamePhase;
+	OnPreGamePhaseChanged(NewGamePhase);
+	GamePhaseChangingCode.Broadcast(NewGamePhase);
+	GamePhaseChanging.Broadcast(NewGamePhase);
+	GamePhase = NewGamePhase;
 	OnGamePhaseChanged();
 }
 
@@ -52,14 +53,30 @@ void ASeekAndDestroyGameMode::FinishGame()
 	SwitchToGamePhase(EGamePhase::End);
 }
 
-bool ASeekAndDestroyGameMode::FindRandomNavLocation(APawn* ForPawn, float InRadius, FVector& OutLocation) const
+bool ASeekAndDestroyGameMode::FindRandomNavLocation(APawn* ForPawn, FVector& OutLocation) const
 {
-	const FNavLocation& FoundNavLocation = FindRandomNavLocation(ForPawn, InRadius);
+	float Radius = 1000000.0f;
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (NavSys)
+	{
+		const TSet<FNavigationBounds>& NavBounds = NavSys->GetNavigationBounds();
+		for (const FNavigationBounds& NavBound : NavBounds)
+		{
+			Radius = NavBound.AreaBox.GetSize().GetMax();
+			break;
+		}
+	}
+	return FindRandomNavLocationInRadius(ForPawn, Radius, OutLocation);
+}
+
+bool ASeekAndDestroyGameMode::FindRandomNavLocationInRadius(APawn* ForPawn, float InRadius, FVector& OutLocation) const
+{
+	const FNavLocation& FoundNavLocation = FindRandomNavLocationInRadius(ForPawn, InRadius);
 	OutLocation = FoundNavLocation.Location;
 	return FoundNavLocation.HasNodeRef();
 }
 
-FNavLocation ASeekAndDestroyGameMode::FindRandomNavLocation(APawn* ForPawn, float InRadius) const
+FNavLocation ASeekAndDestroyGameMode::FindRandomNavLocationInRadius(APawn* ForPawn, float InRadius) const
 {
 	FNavLocation FoundNavLocation;
 
@@ -97,15 +114,46 @@ void ASeekAndDestroyGameMode::BeginPlay()
 	RestartGame();
 }
 
-void ASeekAndDestroyGameMode::OnGamePhaseChanged()
+void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 {
-	FVector InitialLocation = FVector::ZeroVector;
-	UNavigationSystemV1* NavSys = nullptr;
 	float RadiusForSpawn = 0.0f;
+	FNavLocation InitialNavLocation;
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (!NavSys)
+	{
+		// @TODO log warning;
+		SwitchToGamePhase(EGamePhase::End);
+		return;
+	}
+	NavSys->ProjectPointToNavigation(InitialNavLocation.Location, InitialNavLocation);
 
-	switch (GetGamePhase())
+	switch (NewGamePhase)
 	{
 	case EGamePhase::Configuration:
+
+		for (auto&& PlayerPawn : PlayerPawns)
+		{
+			PlayerPawn->Destroy();
+		}
+		PlayerPawns.Reset();
+
+		// Player pawn spawning / restart.
+		// @TODO Spawning in loop PlayerPawnCount.
+		PlayerPawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultPlayerPawnClass, &InitialNavLocation.Location)));
+		if (PlayerPawns.Num() > 0 && PlayerPawns[0] != nullptr)
+		{
+			PlayerPawns[0]->SetActorLocation(InitialNavLocation.Location);
+			// Auto spectate on first player pawn.
+			GetWorld()->GetFirstPlayerController()->SetViewTarget(PlayerPawns[0]);
+			// @TODO Add selecting next and previous target to spectate?
+		}
+
+		for (auto&& HostilePawn : HostilePawns)
+		{
+			HostilePawn->Destroy();
+		}
+		HostilePawns.Reset();
+
 		break;
 	case EGamePhase::Play:
 		if (HostilePawnCount <= 0)
@@ -114,29 +162,10 @@ void ASeekAndDestroyGameMode::OnGamePhaseChanged()
 			SwitchToGamePhase(EGamePhase::End);
 			return;
 		}
-		NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-		if (!NavSys)
-		{
-			// @TODO log warning;
-			SwitchToGamePhase(EGamePhase::End);
-			return;
-		}
 
-		// Conditional player pawn spawning
-		if (PlayerPawns.Num() <= 0 || PlayerPawns[0] == nullptr)
-		{
-			PlayerPawns.Reset();
-			// @TODO Spawning in loop PlayerPawnCount.
-			InitialLocation = NavSys->ProjectPointToNavigation(this, InitialLocation); // FindRandomNavLocation(nullptr, 0.0f).Location;
-			PlayerPawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultPlayerPawnClass, &InitialLocation)));
-		}
-
-		// Hostile spawning
 		if (PlayerPawns.Num() > 0 && PlayerPawns[0] != nullptr)
 		{
-			// @TODO Auto spectate on first player pawn. Add selecting next and previous target to spectate?
-			GetWorld()->GetFirstPlayerController()->SetViewTarget(PlayerPawns[0]);
-
+			// Hostile spawning
 			const TSet<FNavigationBounds>& NavBounds = NavSys->GetNavigationBounds();
 			for (const FNavigationBounds& NavBound : NavBounds)
 			{
@@ -146,11 +175,25 @@ void ASeekAndDestroyGameMode::OnGamePhaseChanged()
 
 			for (int i = 0; i < HostilePawnCount; ++i)
 			{
-				InitialLocation = FindRandomNavLocation(PlayerPawns[0], RadiusForSpawn).Location;
-				HostilePawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialLocation)));
+				// Based on PlayerPawn which is already present.
+				InitialNavLocation = FindRandomNavLocationInRadius(PlayerPawns[0], RadiusForSpawn);
+				HostilePawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialNavLocation.Location)));
 			}
 		}
 
+		break;
+	case EGamePhase::End:
+		break;
+	}
+}
+
+void ASeekAndDestroyGameMode::OnGamePhaseChanged()
+{
+	switch (GetGamePhase())
+	{
+	case EGamePhase::Configuration:
+		break;
+	case EGamePhase::Play:
 		break;
 	case EGamePhase::End:
 		break;

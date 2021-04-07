@@ -15,7 +15,8 @@ UCLASS()
 class SEEKANDDESTROY_API USADBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-	
+
+public:
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy, meta = (WorldContext = "WorldContextObject"))
 	static ASeekAndDestroyGameMode* GetSeekAndDestroyGameMode(const UObject* WorldContextObject);
 };

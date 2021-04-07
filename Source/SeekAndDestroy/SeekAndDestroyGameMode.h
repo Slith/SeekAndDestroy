@@ -4,17 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "SeekAndDestroy.h"
+
 #include "SeekAndDestroyGameMode.generated.h"
 
 class ASeekAndDestroyCharacter;
-
-UENUM(BlueprintType)
-enum class EGamePhase : uint8
-{
-	Configuration,
-	Play,
-	End
-};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGamePhaseChangingDelegate, EGamePhase, NewGamePhase);
 DECLARE_MULTICAST_DELEGATE_OneParam(FGamePhaseChangingDelegateCode, EGamePhase /*NewGamePhase*/);
@@ -35,6 +29,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Classes)
 	TSubclassOf<APawn> DefaultHostilePawnClass;
 
+	// @TODO Spawning in loop PlayerPawnCount.
 	UPROPERTY(VisibleAnywhere, Category=SeekAndDestroy)
 	TArray<ASeekAndDestroyCharacter*> PlayerPawns;
 	UPROPERTY(VisibleAnywhere, Category=SeekAndDestroy)
@@ -74,7 +69,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	EGamePhase GetGamePhase() const { return GamePhase; }
 
-	void SwitchToGamePhase(EGamePhase InGamePhase);
+	void SwitchToGamePhase(EGamePhase NewGamePhase);
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
 	void RestartGame();
@@ -86,12 +81,16 @@ public:
 	void FinishGame();
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
-	bool FindRandomNavLocation(APawn* ForPawn, float InRadius, FVector& OutLocation) const;
-	FNavLocation FindRandomNavLocation(APawn* ForPawn, float InRadius) const;
+	bool FindRandomNavLocation(APawn* ForPawn, FVector& OutLocation) const;
+
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	bool FindRandomNavLocationInRadius(APawn* ForPawn, float InRadius, FVector& OutLocation) const;
+	FNavLocation FindRandomNavLocationInRadius(APawn* ForPawn, float InRadius) const;
 
 protected:
 	virtual void BeginPlay() override;
 
+	void OnPreGamePhaseChanged(EGamePhase NewGamePhase);
 	void OnGamePhaseChanged();
 };
 
