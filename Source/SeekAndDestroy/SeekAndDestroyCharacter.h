@@ -6,10 +6,16 @@
 #include "GameFramework/Character.h"
 #include "SeekAndDestroyCharacter.generated.h"
 
+class AWeapon;
+
 UCLASS(Blueprintable)
 class ASeekAndDestroyCharacter : public ACharacter
 {
 	GENERATED_BODY()
+
+protected:
+	UPROPERTY()
+	TWeakObjectPtr<AWeapon> HeldWeapon;
 
 public:
 	ASeekAndDestroyCharacter();
@@ -23,6 +29,15 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	///** Returns CursorToWorld subobject **/
 	//FORCEINLINE class UDecalComponent* GetCursorToWorld() { return CursorToWorld; }
+
+	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
+	AWeapon* GetHeldWeapon() const { return HeldWeapon.Get(); }
+
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	void EquipWeapon(AWeapon* NewHeldWeapon);
+
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	void UnequipWeapon();
 
 private:
 	/** Top down camera */

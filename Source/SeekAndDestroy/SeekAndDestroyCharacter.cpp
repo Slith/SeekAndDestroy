@@ -13,6 +13,8 @@
 #include "Engine/World.h"
 
 #include "SADAIController.h"
+#include "Weapon.h"
+
 
 ASeekAndDestroyCharacter::ASeekAndDestroyCharacter()
 {
@@ -57,4 +59,25 @@ ASeekAndDestroyCharacter::ASeekAndDestroyCharacter()
 void ASeekAndDestroyCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+}
+
+void ASeekAndDestroyCharacter::EquipWeapon(AWeapon* NewHeldWeapon)
+{
+	if (!NewHeldWeapon)
+	{
+		// log warning
+		return;
+	}
+	UnequipWeapon();
+	HeldWeapon = NewHeldWeapon;
+	NewHeldWeapon->OnEquippedBy(this);
+}
+
+void ASeekAndDestroyCharacter::UnequipWeapon()
+{
+	if (AWeapon* Weapon = GetHeldWeapon())
+	{
+		Weapon->OnUnequipped();
+		HeldWeapon = nullptr;
+	}
 }
