@@ -30,6 +30,26 @@ ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 	DefaultPawnClass = SpectatorClass;
 }
 
+void ASeekAndDestroyGameMode::CharacterDied(ASeekAndDestroyCharacter* DeadCharacter)
+{
+	if (!DeadCharacter)
+	{
+		return;
+	}
+
+	if (HostilePawns.Remove(DeadCharacter) <= 0)
+	{
+		PlayerPawns.Remove(DeadCharacter);
+	}
+
+	PawnsToCleanUp.Add(DeadCharacter);
+
+	if (HostilePawns.Num() <= 0 || PlayerPawns.Num() <= 0)
+	{
+		FinishGame();
+	}
+}
+
 void ASeekAndDestroyGameMode::SwitchToGamePhase(EGamePhase NewGamePhase)
 {
 	OnPreGamePhaseChanged(NewGamePhase);
@@ -132,6 +152,12 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 	switch (NewGamePhase)
 	{
 	case EGamePhase::Configuration:
+		// @TODO Contain in method.
+		for (auto&& Pawn : PawnsToCleanUp)
+		{
+			Pawn->Destroy();
+		}
+		PawnsToCleanUp.Reset();
 
 		for (auto&& PlayerPawn : PlayerPawns)
 		{
@@ -167,6 +193,8 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 
 		for (auto&& PlayerPawn : PlayerPawns)
 		{
+			// Reequip weapon to apply configuration mutators.
+			PlayerPawn->EquipWeapon(PlayerPawn->GetHeldWeapon());
 			if (PlayerPawn->GetCharacterMovement())
 			{
 				PlayerPawn->GetCharacterMovement()->MaxWalkSpeed = PlayerPawnSpeed;
@@ -189,6 +217,8 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 				InitialNavLocation = FindRandomNavLocationInRadius(PlayerPawns[0], RadiusForSpawn);
 				HostilePawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialNavLocation.Location)));
 				HostilePawns.Last()->GetCharacterMovement()->MaxWalkSpeed = HostilePawnSpeed;
+				HostilePawns.Last()->SetMaxHealth(HostilePawnHealth);
+				HostilePawns.Last()->SetHealth(HostilePawnHealth);
 			}
 		}
 

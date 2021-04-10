@@ -14,6 +14,8 @@
 
 #include "SADAIController.h"
 #include "Weapon.h"
+#include "SADBlueprintFunctionLibrary.h"
+#include "SeekAndDestroyGameMode.h"
 
 
 ASeekAndDestroyCharacter::ASeekAndDestroyCharacter()
@@ -54,11 +56,68 @@ ASeekAndDestroyCharacter::ASeekAndDestroyCharacter()
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	AIControllerClass = ASADAIController::StaticClass();
+
+	MaxHealth = 100.0f;
+	Health = 100.0f;
 }
 
 void ASeekAndDestroyCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+}
+
+float ASeekAndDestroyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (!ShouldTakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser))
+	{
+		return 0.f;
+	}
+
+	Health = Health - DamageAmount;
+
+	// @NOTE We're not using any internal structure to modify damage, so we can use DamageAmount for cohesion.
+	const float ActualDamage = AActor::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// respond to the damage
+	if (DamageAmount != 0.f)
+	{
+		if (EventInstigator && EventInstigator != Controller)
+		{
+			LastHitBy = EventInstigator;
+		}
+	}
+
+	if (Health <= 0.0f)
+	{
+		Die();
+	}
+
+	return DamageAmount;
+}
+
+void ASeekAndDestroyCharacter::Die()
+{
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetMesh()->SetAllBodiesSimulatePhysics(true);
+
+	if (ASeekAndDestroyGameMode* SADGM = USADBlueprintFunctionLibrary::GetSeekAndDestroyGameMode(this))
+	{
+		SADGM->CharacterDied(this);
+	}
+}
+
+void ASeekAndDestroyCharacter::SetMaxHealth(float NewMaxHealth)
+{
+	MaxHealth = NewMaxHealth;
+	MaxHealthChanged.Broadcast(MaxHealth);
+}
+
+void ASeekAndDestroyCharacter::SetHealth(float NewHealth)
+{
+	Health = NewHealth;
+	HealthChanged.Broadcast(Health);
 }
 
 void ASeekAndDestroyCharacter::EquipWeapon(AWeapon* NewHeldWeapon)

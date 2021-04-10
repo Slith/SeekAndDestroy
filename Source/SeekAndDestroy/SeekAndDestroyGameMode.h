@@ -34,6 +34,8 @@ protected:
 	TArray<ASeekAndDestroyCharacter*> PlayerPawns;
 	UPROPERTY(VisibleAnywhere, Category=SeekAndDestroy)
 	TArray<ASeekAndDestroyCharacter*> HostilePawns;
+	UPROPERTY(VisibleAnywhere, Category=SeekAndDestroy)
+	TArray<ASeekAndDestroyCharacter*> PawnsToCleanUp;
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = SeekAndDestroy)
@@ -65,6 +67,8 @@ public:
 	// @FIXME See if const reference can be modified in BP. If it can, make a copy for safety.
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	const TArray<ASeekAndDestroyCharacter*>& GetHostilePawns() const { return HostilePawns; }
+
+	virtual void CharacterDied(ASeekAndDestroyCharacter* DeadCharacter);
 
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	EGamePhase GetGamePhase() const { return GamePhase; }
