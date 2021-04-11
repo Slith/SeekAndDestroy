@@ -13,6 +13,9 @@ class ASeekAndDestroyCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGamePhaseChangingDelegate, EGamePhase, NewGamePhase);
 DECLARE_MULTICAST_DELEGATE_OneParam(FGamePhaseChangingDelegateCode, EGamePhase /*NewGamePhase*/);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDelegate, ASeekAndDestroyCharacter*, SeekAndDestroyCharacter);
+
+
 UCLASS(minimalapi)
 class ASeekAndDestroyGameMode : public AGameModeBase
 {
@@ -41,6 +44,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = SeekAndDestroy)
 	FGamePhaseChangingDelegate GamePhaseChanging;
 	FGamePhaseChangingDelegateCode GamePhaseChangingCode;
+
+	UPROPERTY(BlueprintAssignable, Category = SeekAndDestroy)
+	FCharacterDelegate OnCharacterDied;
 
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SeekAndDestroy)
 	//int32 PlayerPawnCount;

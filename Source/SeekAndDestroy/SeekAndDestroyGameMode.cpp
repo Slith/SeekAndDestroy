@@ -43,6 +43,7 @@ void ASeekAndDestroyGameMode::CharacterDied(ASeekAndDestroyCharacter* DeadCharac
 	}
 
 	PawnsToCleanUp.Add(DeadCharacter);
+	OnCharacterDied.Broadcast(DeadCharacter);
 
 	if (HostilePawns.Num() <= 0 || PlayerPawns.Num() <= 0)
 	{
