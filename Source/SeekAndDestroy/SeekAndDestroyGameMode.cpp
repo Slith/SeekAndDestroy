@@ -170,6 +170,8 @@ bool ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 	FNavLocation InitialNavLocation;
 	NavSys->ProjectPointToNavigation(InitialNavLocation.Location, InitialNavLocation);
 
+	ASeekAndDestroyCharacter* SpawnedCharacter = nullptr;
+
 	switch (NewGamePhase)
 	{
 	case EGamePhase::Configuration:
@@ -179,12 +181,13 @@ bool ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 
 		// Player pawn spawning / restart.
 		// @TODO Spawning in loop PlayerPawnCount.
-		PlayerPawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultPlayerPawnClass, &InitialNavLocation.Location)));
-		if (PlayerPawns.Num() > 0 && PlayerPawns[0] != nullptr)
+		SpawnedCharacter = Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultPlayerPawnClass, &InitialNavLocation.Location));
+		if (SpawnedCharacter)
 		{
-			PlayerPawns[0]->SetActorLocation(InitialNavLocation.Location);
+			PlayerPawns.Add(SpawnedCharacter);
+			SpawnedCharacter->SetActorLocation(InitialNavLocation.Location);
 			// Auto spectate on first player pawn.
-			GetWorld()->GetFirstPlayerController()->SetViewTarget(PlayerPawns[0]);
+			GetWorld()->GetFirstPlayerController()->SetViewTarget(SpawnedCharacter);
 			// @TODO Add selecting next and previous target to spectate?
 		}
 
@@ -211,8 +214,15 @@ bool ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 			{
 				// Based on PlayerPawn which is already present.
 				InitialNavLocation = FindRandomNavLocationInRadius(PlayerPawns[0], RadiusForSpawn);
-				HostilePawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialNavLocation.Location)));
+				SpawnedCharacter = Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialNavLocation.Location));
+				if (SpawnedCharacter)
+				{
+					HostilePawns.Add(SpawnedCharacter);
+				}
 			}
+
+			// Account for impossibility of spawning too much.
+			HostilePawnCount = HostilePawns.Num();
 		}
 
 		break;
