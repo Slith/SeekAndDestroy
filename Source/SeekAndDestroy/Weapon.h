@@ -39,7 +39,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	USkeletalMeshComponent* GetMesh() const { return Mesh; }
 
-	UFUNCTION(BlueprintNativeEvent, Category = SeekAndDestroy)
+	UFUNCTION(BlueprintPure, BlueprintNativeEvent, Category = SeekAndDestroy)
 	FVector GetMuzzleLocation() const;
 	virtual FVector GetMuzzleLocation_Implementation() const { return GetActorLocation(); }
 
