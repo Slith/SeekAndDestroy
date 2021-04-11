@@ -41,21 +41,39 @@ void AWeapon::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-bool AWeapon::IsActorInLOS(AActor* InActor) const
+bool AWeapon::TryAttack(AActor* TargetActor)
 {
-	// @TODO
-	return true;
+	if (!TargetActor)
+	{
+		// log warning
+		return false;
+	}
+	
+	float CollisionRadius = 0.0f;
+	float CollisionHalfHeight = 0.0f;
+	TargetActor->GetComponentsBoundingCylinder(CollisionRadius, CollisionHalfHeight);
+
+	const FVector DistanceVector = TargetActor->GetActorLocation() - GetMuzzleLocation();
+	const bool bInRange = DistanceVector.Size() - CollisionRadius <= GetRange();
+
+	if (bInRange)
+	{
+		ShowAttackFX(TargetActor);
+		ApplyDamageToActor(TargetActor);
+	}
+
+	return bInRange;
 }
 
-void AWeapon::ApplyDamageToActor(AActor* InActor)
+void AWeapon::ApplyDamageToActor(AActor* TargetActor)
 {
-	if (!InActor || !InActor->CanBeDamaged())
+	if (!TargetActor || !TargetActor->CanBeDamaged())
 	{
 		// log warning
 		return;
 	}
 
-	InActor->TakeDamage(DamagePerHit, PrepareDamageEvent(), GetInstigator()? GetInstigator()->GetController() : nullptr, this);
+	TargetActor->TakeDamage(DamagePerHit, PrepareDamageEvent(), GetInstigator()? GetInstigator()->GetController() : nullptr, this);
 }
 
 void AWeapon::OnEquippedBy(APawn* InInstigator)

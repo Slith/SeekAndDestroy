@@ -130,6 +130,7 @@ void ASeekAndDestroyCharacter::EquipWeapon(AWeapon* NewHeldWeapon)
 	UnequipWeapon();
 	HeldWeapon = NewHeldWeapon;
 	NewHeldWeapon->OnEquippedBy(this);
+	OnEquippedWeapon(NewHeldWeapon);
 }
 
 void ASeekAndDestroyCharacter::UnequipWeapon()
@@ -137,6 +138,7 @@ void ASeekAndDestroyCharacter::UnequipWeapon()
 	if (AWeapon* Weapon = GetHeldWeapon())
 	{
 		Weapon->OnUnequipped();
+		OnUnequippedWeapon(Weapon);
 		HeldWeapon = nullptr;
 	}
 }

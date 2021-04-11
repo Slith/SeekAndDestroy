@@ -39,18 +39,25 @@ public:
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	USkeletalMeshComponent* GetMesh() const { return Mesh; }
 
+	UFUNCTION(BlueprintNativeEvent, Category = SeekAndDestroy)
+	FVector GetMuzzleLocation() const;
+	virtual FVector GetMuzzleLocation_Implementation() const { return GetActorLocation(); }
+
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	float GetRange() const { return Range; }
 
 	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
 	float GetDamagePerHit() const { return DamagePerHit; }
 
+	UFUNCTION(BlueprintNativeEvent, Category = SeekAndDestroy)
+	void ShowAttackFX(AActor* TargetActor);
+	virtual void ShowAttackFX_Implementation(AActor* TargetActor) {}
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
-	bool IsActorInLOS(AActor* InActor) const;
+	bool TryAttack(AActor* TargetActor);
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
-	void ApplyDamageToActor(AActor* InActor);
+	void ApplyDamageToActor(AActor* TargetActor);
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
 	void OnEquippedBy(APawn* InInstigator);

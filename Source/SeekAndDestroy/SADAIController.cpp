@@ -5,6 +5,7 @@
 #include "SADBlueprintFunctionLibrary.h"
 #include "SeekAndDestroyGameMode.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
+#include "BehaviorTree/BehaviorTree.h"
 
 void ASADAIController::BeginPlay()
 {
@@ -18,6 +19,12 @@ void ASADAIController::BeginPlay()
 
 bool ASADAIController::RunBehaviorTree(UBehaviorTree* BTAsset)
 {
+	if (!BTAsset)
+	{
+		// @TODO log warning
+		return false;
+	}
+	UseBlackboard(BTAsset->BlackboardAsset, Blackboard);
 	const bool bResult = Super::RunBehaviorTree(BTAsset);
 	//CurrentBehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
 	return bResult;

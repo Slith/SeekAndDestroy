@@ -9,6 +9,15 @@
 
 #include "NavigationSystem.h"
 
+void ASeekAndDestroyGameMode::CleanUpCharacterArray(TArray<ASeekAndDestroyCharacter*>& CharacterArray)
+{
+	for (auto&& Character : CharacterArray)
+	{
+		Character->Destroy();
+	}
+	CharacterArray.Reset();
+}
+
 ASeekAndDestroyGameMode::ASeekAndDestroyGameMode()
 {
 	// use our custom PlayerController class
@@ -53,11 +62,13 @@ void ASeekAndDestroyGameMode::CharacterDied(ASeekAndDestroyCharacter* DeadCharac
 
 void ASeekAndDestroyGameMode::SwitchToGamePhase(EGamePhase NewGamePhase)
 {
-	OnPreGamePhaseChanged(NewGamePhase);
-	GamePhaseChangingCode.Broadcast(NewGamePhase);
-	GamePhaseChanging.Broadcast(NewGamePhase);
-	GamePhase = NewGamePhase;
-	OnGamePhaseChanged();
+	if (OnPreGamePhaseChanged(NewGamePhase))
+	{
+		GamePhaseChangingCode.Broadcast(NewGamePhase);
+		GamePhaseChanging.Broadcast(NewGamePhase);
+		GamePhase = NewGamePhase;
+		OnGamePhaseChanged();
+	}
 }
 
 void ASeekAndDestroyGameMode::RestartGame()
@@ -129,6 +140,15 @@ FNavLocation ASeekAndDestroyGameMode::FindRandomNavLocationInRadius(APawn* ForPa
 	return FoundNavLocation;
 }
 
+ASeekAndDestroyCharacter* ASeekAndDestroyGameMode::PickRandomTarget(const TArray<ASeekAndDestroyCharacter*>& ArrayOfTargets)
+{
+	if (ArrayOfTargets.Num() > 0)
+	{
+		return ArrayOfTargets[FMath::RandRange(0, ArrayOfTargets.Num() - 1)];
+	}
+	return nullptr;
+}
+
 void ASeekAndDestroyGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -136,14 +156,14 @@ void ASeekAndDestroyGameMode::BeginPlay()
 	RestartGame();
 }
 
-void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
+bool ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 {
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	if (!NavSys)
 	{
 		// @TODO log warning;
 		SwitchToGamePhase(EGamePhase::End);
-		return;
+		return false;
 	}
 
 	float RadiusForSpawn = 0.0f;
@@ -153,18 +173,9 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 	switch (NewGamePhase)
 	{
 	case EGamePhase::Configuration:
-		// @TODO Contain in method.
-		for (auto&& Pawn : PawnsToCleanUp)
-		{
-			Pawn->Destroy();
-		}
-		PawnsToCleanUp.Reset();
-
-		for (auto&& PlayerPawn : PlayerPawns)
-		{
-			PlayerPawn->Destroy();
-		}
-		PlayerPawns.Reset();
+		CleanUpCharacterArray(PawnsToCleanUp);
+		CleanUpCharacterArray(PlayerPawns);
+		CleanUpCharacterArray(HostilePawns);
 
 		// Player pawn spawning / restart.
 		// @TODO Spawning in loop PlayerPawnCount.
@@ -177,29 +188,13 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 			// @TODO Add selecting next and previous target to spectate?
 		}
 
-		for (auto&& HostilePawn : HostilePawns)
-		{
-			HostilePawn->Destroy();
-		}
-		HostilePawns.Reset();
-
 		break;
 	case EGamePhase::Play:
 		if (HostilePawnCount <= 0)
 		{
 			// @TODO log warning;
 			SwitchToGamePhase(EGamePhase::End);
-			return;
-		}
-
-		for (auto&& PlayerPawn : PlayerPawns)
-		{
-			// Reequip weapon to apply configuration mutators.
-			PlayerPawn->EquipWeapon(PlayerPawn->GetHeldWeapon());
-			if (PlayerPawn->GetCharacterMovement())
-			{
-				PlayerPawn->GetCharacterMovement()->MaxWalkSpeed = PlayerPawnSpeed;
-			}
+			return false;
 		}
 
 		if (PlayerPawns.Num() > 0 && PlayerPawns[0] != nullptr)
@@ -217,9 +212,6 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 				// Based on PlayerPawn which is already present.
 				InitialNavLocation = FindRandomNavLocationInRadius(PlayerPawns[0], RadiusForSpawn);
 				HostilePawns.Add(Cast<ASeekAndDestroyCharacter>(GetWorld()->SpawnActor(DefaultHostilePawnClass, &InitialNavLocation.Location)));
-				HostilePawns.Last()->GetCharacterMovement()->MaxWalkSpeed = HostilePawnSpeed;
-				HostilePawns.Last()->SetMaxHealth(HostilePawnHealth);
-				HostilePawns.Last()->SetHealth(HostilePawnHealth);
 			}
 		}
 
@@ -227,15 +219,45 @@ void ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 	case EGamePhase::End:
 		break;
 	}
+
+	return true;
 }
 
 void ASeekAndDestroyGameMode::OnGamePhaseChanged()
 {
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	float RadiusForSpawn = 0.0f;
+	FNavLocation InitialNavLocation;
+	NavSys->ProjectPointToNavigation(InitialNavLocation.Location, InitialNavLocation);
+
 	switch (GetGamePhase())
 	{
 	case EGamePhase::Configuration:
 		break;
 	case EGamePhase::Play:
+		for (auto&& PlayerPawn : PlayerPawns)
+		{
+			// Reequip weapon to apply configuration mutators.
+			PlayerPawn->EquipWeapon(PlayerPawn->GetHeldWeapon());
+			if (PlayerPawn->GetCharacterMovement())
+			{
+				PlayerPawn->GetCharacterMovement()->MaxWalkSpeed = PlayerPawnSpeed;
+			}
+		}
+
+		for (auto&& HostilePawn : HostilePawns)
+		{
+			// Reequip weapon to apply configuration mutators.
+			HostilePawn->EquipWeapon(HostilePawn->GetHeldWeapon());
+			if (HostilePawn->GetCharacterMovement())
+			{
+				HostilePawn->GetCharacterMovement()->MaxWalkSpeed = HostilePawnSpeed;
+			}
+			HostilePawn->SetMaxHealth(HostilePawnHealth);
+			HostilePawn->SetHealth(HostilePawnHealth);
+			HostilePawn->EquipWeapon(HostilePawns.Last()->GetHeldWeapon());
+		}
+
 		break;
 	case EGamePhase::End:
 		break;

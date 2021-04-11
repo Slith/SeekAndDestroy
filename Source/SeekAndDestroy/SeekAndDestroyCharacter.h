@@ -71,10 +71,21 @@ public:
 	void SetHealth(float NewHealth);
 
 
-	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
-	void EquipWeapon(AWeapon* NewHeldWeapon);
+	UFUNCTION(BlueprintPure, Category = SeekAndDestroy)
+	bool IsDead() const { return Health <= 0.0f; }
+
 
 	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	void EquipWeapon(AWeapon* NewHeldWeapon);
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
 	void UnequipWeapon();
+
+	UFUNCTION(BlueprintNativeEvent, Category = SeekAndDestroy)
+	void OnEquippedWeapon(AWeapon* NewHeldWeapon);
+	virtual void OnEquippedWeapon_Implementation(AWeapon* NewHeldWeapon) {}
+
+	UFUNCTION(BlueprintNativeEvent, Category = SeekAndDestroy)
+	void OnUnequippedWeapon(AWeapon* OldHeldWeapon);
+	virtual void OnUnequippedWeapon_Implementation(AWeapon* OldHeldWeapon) {}
 };
 

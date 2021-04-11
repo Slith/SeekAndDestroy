@@ -40,6 +40,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category=SeekAndDestroy)
 	TArray<ASeekAndDestroyCharacter*> PawnsToCleanUp;
 
+	virtual void CleanUpCharacterArray(TArray<ASeekAndDestroyCharacter*>& CharacterArray);
+
 public:
 	UPROPERTY(BlueprintAssignable, Category = SeekAndDestroy)
 	FGamePhaseChangingDelegate GamePhaseChanging;
@@ -97,10 +99,13 @@ public:
 	bool FindRandomNavLocationInRadius(APawn* ForPawn, float InRadius, FVector& OutLocation) const;
 	FNavLocation FindRandomNavLocationInRadius(APawn* ForPawn, float InRadius) const;
 
+	UFUNCTION(BlueprintCallable, Category = SeekAndDestroy)
+	ASeekAndDestroyCharacter* PickRandomTarget(const TArray<ASeekAndDestroyCharacter*>& ArrayOfTargets);
+
 protected:
 	virtual void BeginPlay() override;
 
-	void OnPreGamePhaseChanged(EGamePhase NewGamePhase);
+	bool OnPreGamePhaseChanged(EGamePhase NewGamePhase);
 	void OnGamePhaseChanged();
 };
 
