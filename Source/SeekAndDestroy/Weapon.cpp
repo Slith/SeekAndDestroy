@@ -45,7 +45,7 @@ bool AWeapon::TryAttack(AActor* TargetActor)
 {
 	if (!TargetActor)
 	{
-		// log warning
+		SAD_WARNING("No TargetActor");
 		return false;
 	}
 	
@@ -69,7 +69,7 @@ void AWeapon::ApplyDamageToActor(AActor* TargetActor)
 {
 	if (!TargetActor || !TargetActor->CanBeDamaged())
 	{
-		// log warning
+		SAD_WARNING("No TargetActor or TargetActor can't be damaged");
 		return;
 	}
 

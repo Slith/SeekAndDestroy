@@ -21,7 +21,7 @@ bool ASADAIController::RunBehaviorTree(UBehaviorTree* BTAsset)
 {
 	if (!BTAsset)
 	{
-		// @TODO log warning
+		SAD_WARNING("No BTAsset");
 		return false;
 	}
 	UseBlackboard(BTAsset->BlackboardAsset, Blackboard);

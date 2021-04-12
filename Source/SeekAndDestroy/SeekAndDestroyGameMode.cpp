@@ -115,14 +115,14 @@ FNavLocation ASeekAndDestroyGameMode::FindRandomNavLocationInRadius(APawn* ForPa
 
 	if (!ForPawn)
 	{
-		// @TODO log warning;
+		SAD_WARNING("No ForPawn");
 		return FoundNavLocation;
 	}
 
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	if (!NavSys)
 	{
-		// @TODO log warning;
+		SAD_WARNING("No NavSys");
 		return FoundNavLocation;
 	}
 
@@ -132,7 +132,7 @@ FNavLocation ASeekAndDestroyGameMode::FindRandomNavLocationInRadius(APawn* ForPa
 	{
 		if (!NavSys->MainNavData || !NavSys->MainNavData->GetRandomReachablePointInRadius(FVector::ZeroVector, InRadius, FoundNavLocation))
 		{
-			// @TODO log warning;
+			SAD_WARNING("No NavData or no reachable points InRadius");
 			return FoundNavLocation;
 		}
 	}
@@ -161,7 +161,7 @@ bool ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	if (!NavSys)
 	{
-		// @TODO log warning;
+		SAD_WARNING("No NavSys");
 		SwitchToGamePhase(EGamePhase::End);
 		return false;
 	}
@@ -195,7 +195,7 @@ bool ASeekAndDestroyGameMode::OnPreGamePhaseChanged(EGamePhase NewGamePhase)
 	case EGamePhase::Play:
 		if (HostilePawnCount <= 0)
 		{
-			// @TODO log warning;
+			SAD_WARNING("HostilePawnCount <= 0");
 			SwitchToGamePhase(EGamePhase::End);
 			return false;
 		}

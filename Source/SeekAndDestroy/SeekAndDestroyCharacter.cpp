@@ -124,7 +124,7 @@ void ASeekAndDestroyCharacter::EquipWeapon(AWeapon* NewHeldWeapon)
 {
 	if (!NewHeldWeapon)
 	{
-		// log warning
+		SAD_WARNING("No NewHeldWeapon");
 		return;
 	}
 	UnequipWeapon();

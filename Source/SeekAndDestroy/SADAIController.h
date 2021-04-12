@@ -22,10 +22,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = SeekAndDestroy)
 	UBehaviorTree* DefaultBehaviorTree;
 
-	// @TODO Needed?
-	//UPROPERTY(VisibleAnywhere, Category = SeekAndDestroy)
-	//UBehaviorTreeComponent* CurrentBehaviorTreeComponent;
-
 
 	virtual void BeginPlay() override;
 
